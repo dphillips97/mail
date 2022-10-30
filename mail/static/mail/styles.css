@@ -1,0 +1,27 @@
+textarea {
+    min-height: 400px;
+}
+
+.entry {
+    background-color: #FFFAFA;
+    border: 1px solid #36454F;
+    border-radius: 8px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.entry .entry-unread {
+    background-color: #F5F5F5;
+}
+
+.no-bullet {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.single-view-inner {
+    border: 1px solid #36454F;
+    border-radius: 8px;
+    padding: 5px;
+}
