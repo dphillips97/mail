@@ -6,9 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
   document.querySelector('#compose').addEventListener('click', compose_email);
 
-  // Add event listener for submit and call send_mail
+  // Add event listeners for submit and archive
   document.querySelector('#compose-form').addEventListener('submit', send_mail);
-
   document.querySelector('#archive-button').addEventListener('click', put_archive);
   
   // By default, load the inbox
@@ -94,11 +93,16 @@ function send_mail(event) {
     //console.log(result);
   });
   
-  // Finally, load sent mailbox
   load_mailbox('sent'); 
 }
 
 function view_email(event) {
+  /* Archive button needs 2 pieces of info, email-id and archive-status.
+    But adding a button using JS then adding an event listener didn't work 
+    because the button wasn't created when the event listener was supposed 
+    to be attached. This is a work-around using the archive button's 2 data attributes.
+  */
+
   event.preventDefault();
 
   // Show #single-view and hide other views
@@ -114,34 +118,32 @@ function view_email(event) {
   .then(response => response.json())
   .then(email => {
 
-    /* Update email read status if unread
-    if (!email['read']) {
-      put_read(emailId);  
-    }; */
-    
-    // Get main div
-    singleViewDiv = document.querySelector('#single-view');
-    
+    // Select email content div and li content
+    const emailContent = document.querySelector('#email-content');
+    const liSender = document.querySelector('#li-sender');
+    const liSubject = document.querySelector('#li-subject');
+    const liBody = document.querySelector('#li-body');
+    const liTimestamp = document.querySelector('#li-timestamp');
+
     // Add email info to div
-    singleViewDiv.innerHTML += `
-      <ul class="no-bullet">
-        <li>${email['sender']}</li>
-        <li>${email['subject']}</li>
-        <li>${email['body']}</li>
-        <li><i>${email['timestamp']}</i></li>
-      </ul>`;
+    liSender.innerHTML = `${email['sender']}`;
+    liSubject.innerHTML = `${email['subject']}`;
+    liBody.innerHTML = `${email['body']}`;
+    liTimestamp.innerHTML = `<i>${email['timestamp']}</i>`;
 
-    // Select (un)-archive button
-    archiveButton = document.querySelector('#archive-button');
+    const archiveButton = document.querySelector('#archive-button');
 
-    // Update data with email id
-    archiveButton.dataset.single = `${email['id']}`;
+    // Add email id to button to allow for function call
+    archiveButton.setAttribute("data-id", emailId);
+
+    // Data element name will be rendered in HTML as all lowercase
+    archiveButton.setAttribute("data-archivestatus", email['archived']);
 
     // Add text to button depending on archived status
     if (email['archived'] === false) {
       archiveButton.innerText = 'Archive';
     } else {
-      archiveButton.innerText = 'Un-archive';
+      archiveButton.innerText = 'De-archive';
     }; 
   });
 }
@@ -154,23 +156,13 @@ function put_read(emailId) {
   });
 }
 
-function put_archive() {
-
-  // Select archive button
-  const archiveButton = document.querySelector('#archive-button');
-
-  // Get email id for PUT request
-  const emailId = archiveButton.dataset.single;
-
-  // If text is 'Archive', then it's not archived and vice-versa
-  if (archiveButton.innerText == 'Archive') {
-    const isArchived = false;
-  } else {
-    const isArchived = true;
-  };
+function put_archive(event) {
+  
+  // Get archive status data and cast to boolean
+  const isArchived = (this.dataset.archivestatus === 'true');
 
   // Swap archive status
-  fetch(`/emails/${emailId}`, {
+  fetch(`/emails/${this.dataset.id}`, {
     method: 'PUT',
     body: JSON.stringify({archived: !isArchived})
   })
