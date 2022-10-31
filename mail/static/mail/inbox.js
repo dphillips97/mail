@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add event listener for submit and call send_mail
   document.querySelector('#compose-form').addEventListener('submit', send_mail);
 
+  document.querySelector('#archive-button').addEventListener('click', put_archive);
+  
   // By default, load the inbox
   load_mailbox('inbox');
 });
@@ -39,15 +41,14 @@ function load_mailbox(mailbox) {
   // Show the mailbox name
   emailsView.innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
 
-
   fetch(`emails/${mailbox}`)
   .then(response => response.json())
   .then(emails => {
     emails.forEach(email => {
-      //console.log(email);
 
       // Create div and add event handler
       const entryDiv = document.createElement('div');
+
       entryDiv.addEventListener('click', view_email);
 
       // Add data element: email unique id
@@ -60,7 +61,7 @@ function load_mailbox(mailbox) {
         entryDiv.className = 'entry entry-unread';
       }
 
-      // Display email data
+      // Display email data in entryDiv
       entryDiv.innerHTML = `
         <ul class="no-bullet">
           <li><b>${email['timestamp']}</b></li>
@@ -68,31 +69,33 @@ function load_mailbox(mailbox) {
           <li> Re: <b>${email['subject']}</b></li>
         </ul>`;
 
-      // Add email entry div to parent div
+      // Add entry div to parent div
       emailsView.append(entryDiv);
 
     })
   });
-
 }
 
 function send_mail(event) {
-  event.preventDefault()
+  
+  // Just in case
+  event.preventDefault();
 
-    fetch('/emails', {
-      method: 'POST',
-      body: JSON.stringify({
-        recipients: document.querySelector('#compose-recipients').value,
-        subject: document.querySelector('#compose-subject').value,
-        body: document.querySelector('#compose-body').value
-      })
-    })
-    .then(response => response.json())
-    .then(result => {
-      //console.log(result);
-    });
-    
-    load_mailbox('sent'); 
+  fetch('/emails', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipients: document.querySelector('#compose-recipients').value,
+          subject: document.querySelector('#compose-subject').value,
+          body: document.querySelector('#compose-body').value
+        })
+  })
+  .then(response => response.json())
+  .then(result => {
+    //console.log(result);
+  });
+  
+  // Finally, load sent mailbox
+  load_mailbox('sent'); 
 }
 
 function view_email(event) {
@@ -106,16 +109,21 @@ function view_email(event) {
   // Get email id from clicked email
   const emailId = this.dataset.single;
 
-  // Send GET request to API
+  // GET request to get email's info
   fetch(`/emails/${emailId}`)
   .then(response => response.json())
   .then(email => {
 
-    console.log(email['read']);
-
-    // Get inner div and populate with info
-    singleViewInnerDiv = document.querySelector('.single-view-inner');
-    singleViewInnerDiv.innerHTML = `
+    /* Update email read status if unread
+    if (!email['read']) {
+      put_read(emailId);  
+    }; */
+    
+    // Get main div
+    singleViewDiv = document.querySelector('#single-view');
+    
+    // Add email info to div
+    singleViewDiv.innerHTML += `
       <ul class="no-bullet">
         <li>${email['sender']}</li>
         <li>${email['subject']}</li>
@@ -123,28 +131,48 @@ function view_email(event) {
         <li><i>${email['timestamp']}</i></li>
       </ul>`;
 
-    // Add email elements to inner div
-    const singleView = document.querySelector('#single-view');
-    singleView.append(singleViewInnerDiv);
+    // Select (un)-archive button
+    archiveButton = document.querySelector('#archive-button');
 
-  }) // End GET call process
+    // Update data with email id
+    archiveButton.dataset.single = `${email['id']}`;
 
-  // Update email sent status
-  put_sent(emailId);
+    // Add text to button depending on archived status
+    if (email['archived'] === false) {
+      archiveButton.innerText = 'Archive';
+    } else {
+      archiveButton.innerText = 'Un-archive';
+    }; 
+  });
+}
 
-} // End view_email
-
-function put_sent(emailId) {
+function put_read(emailId) {
 
   fetch(`/emails/${emailId}`, {
     method: 'PUT',
     body: JSON.stringify({read: true})
-  }) // Close PUT call
-  .then((response) => {
-    if (response.status == 204) {
-      console.log(`${response.status}: email is now read!`);
-    } else {
-      console.log('Put request failed.')
-    }
-  }); // End PUT status update
+  });
+}
+
+function put_archive() {
+
+  // Select archive button
+  const archiveButton = document.querySelector('#archive-button');
+
+  // Get email id for PUT request
+  const emailId = archiveButton.dataset.single;
+
+  // If text is 'Archive', then it's not archived and vice-versa
+  if (archiveButton.innerText == 'Archive') {
+    const isArchived = false;
+  } else {
+    const isArchived = true;
+  };
+
+  // Swap archive status
+  fetch(`/emails/${emailId}`, {
+    method: 'PUT',
+    body: JSON.stringify({archived: !isArchived})
+  })
+  .then(response => load_mailbox('inbox'));
 }
