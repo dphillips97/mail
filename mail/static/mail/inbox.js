@@ -6,25 +6,47 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
   document.querySelector('#compose').addEventListener('click', compose_email);
 
-  // Add event listeners for submit and archive
+  // Add event listeners for functions I wrote
   document.querySelector('#compose-form').addEventListener('submit', send_mail);
   document.querySelector('#archive-button').addEventListener('click', put_archive);
+  document.querySelector('#reply-button').addEventListener('click', compose_email);
   
   // By default, load the inbox
   load_mailbox('inbox');
 });
 
-function compose_email() {
+function compose_email(event) {
 
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
   document.querySelector('#single-view').style.display = 'none';
 
+  // Select composition fields
+  const recipients = document.querySelector('#compose-recipients');
+  const subject = document.querySelector('#compose-subject');
+  const body = document.querySelector('#compose-body');
+
   // Clear out composition fields
-  document.querySelector('#compose-recipients').value = '';
-  document.querySelector('#compose-subject').value = '';
-  document.querySelector('#compose-body').value = '';
+  recipients.value = '';
+  subject.value = '';
+  body.value = '';
+
+  
+  // GET call to fill if called by event
+  const emailId = this.dataset.id;
+
+  // GET request to get email's info
+  fetch(`/emails/${emailId}`)
+  .then(response => response.json())
+  .then(email => {
+
+    recipients.value = `${email['sender']}`;
+    subject.value = `Re: ${email['subject']}`;
+    body.value = `On ${email['timestamp']}, ${email['sender']} wrote:`;
+    body.value += `\n${email['body']}`;
+    });
+
 }
 
 function load_mailbox(mailbox) {
@@ -97,6 +119,7 @@ function send_mail(event) {
 }
 
 function view_email(event) {
+
   /* Archive button needs 2 pieces of info, email-id and archive-status.
     But adding a button using JS then adding an event listener didn't work 
     because the button wasn't created when the event listener was supposed 
@@ -133,7 +156,7 @@ function view_email(event) {
 
     const archiveButton = document.querySelector('#archive-button');
 
-    // Add email id to button to allow for function call
+    // Add email id to archive button to allow for function call
     archiveButton.setAttribute("data-id", emailId);
 
     // Data element name will be rendered in HTML as all lowercase
@@ -144,7 +167,13 @@ function view_email(event) {
       archiveButton.innerText = 'Archive';
     } else {
       archiveButton.innerText = 'De-archive';
-    }; 
+    };
+
+    // Add data attribute to reply button
+    const replyButton = document.querySelector('#reply-button');
+
+    replyButton.setAttribute("data-id", email['id']);
+
   });
 }
 
