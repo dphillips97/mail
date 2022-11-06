@@ -2,17 +2,21 @@ textarea {
     min-height: 400px;
 }
 
-.entry {
-    background-color: #FFFAFA;
+.entry-unread {
+    /* Default unread  */
+    background-color: #FFFFFF; /* white */
     border: 1px solid #36454F;
     border-radius: 8px;
     padding: 5px;
     margin: 5px;
 }
 
-.entry .entry-unread {
-    background-color: #F5F5F5;
-    border: 1px solid #ED7117;
+.entry-read {
+    background-color: #BEBEBE; /* grey */
+    border: 1px solid #36454F;
+    border-radius: 8px;
+    padding: 5px;
+    margin: 5px;
 }
 
 .no-bullet {

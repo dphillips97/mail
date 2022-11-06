@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function compose_email(event) {
 
   // GET call to fill if event (reply button clicked)
-  if (event.target.id='reply-button'){
+  if (event.target.id=='reply-button'){
 
     const emailId = this.dataset.id;
 
@@ -32,26 +32,21 @@ function compose_email(event) {
       body.value = `On ${email['timestamp']}, ${email['sender']} wrote:`;
       body.value += `\n${email['body']}`;
       });
-  };
+  }
+    // Show compose view and hide other views
+    document.querySelector('#emails-view').style.display = 'none';
+    document.querySelector('#compose-view').style.display = 'block';
+    document.querySelector('#single-view').style.display = 'none';
 
-  // Show compose view and hide other views
-  document.querySelector('#emails-view').style.display = 'none';
-  document.querySelector('#compose-view').style.display = 'block';
-  document.querySelector('#single-view').style.display = 'none';
+    // Select composition fields
+    const recipients = document.querySelector('#compose-recipients');
+    const subject = document.querySelector('#compose-subject');
+    const body = document.querySelector('#compose-body');
 
-  // Select composition fields
-  const recipients = document.querySelector('#compose-recipients');
-  const subject = document.querySelector('#compose-subject');
-  const body = document.querySelector('#compose-body');
-
-  // Clear out composition fields
-  recipients.value = '';
-  subject.value = '';
-  body.value = '';
-
-  
-  
-
+    // Clear out composition fields
+    recipients.value = '';
+    subject.value = '';
+    body.value = '';
 }
 
 function load_mailbox(mailbox) {
@@ -80,12 +75,14 @@ function load_mailbox(mailbox) {
       // Add data element: email unique id
       entryDiv.dataset.single = `${email['id']}`;
 
-      // Change colors based on 'read' status
-      if (email['read'] == true) {
-        entryDiv.className = 'entry';
+      //console.log(`Email id: ${email['id']} is (read) ${email['read']}`);
+
+      // Check if email has been read and style appropriately
+      if (email['read'] == false) {
+        entryDiv.className = 'entry-unread';
       } else {
-        entryDiv.className = 'entry entry-unread';
-      }
+        entryDiv.className = 'entry-read';
+      };
 
       // Display email data in entryDiv
       entryDiv.innerHTML = `
@@ -115,20 +112,17 @@ function send_mail(event) {
           body: document.querySelector('#compose-body').value
         })
   })
-  .then(response => response.json())
-  .then(result => {
-    //console.log(result);
-  });
-  
-  load_mailbox('sent'); 
+  .then(response => load_mailbox('sent'));
 }
 
 function view_email(event) {
 
-  /* Archive button needs 2 pieces of info, email-id and archive-status.
+  /*
+  Archive button needs 2 pieces of info, email-id and archive-status.
     But adding a button using JS then adding an event listener didn't work 
     because the button wasn't created when the event listener was supposed 
-    to be attached. This is a work-around using the archive button's 2 data attributes.
+    to be attached. This is a work-around using the archive button's 2 data 
+    attributes.
   */
 
   event.preventDefault();
@@ -146,16 +140,20 @@ function view_email(event) {
   .then(response => response.json())
   .then(email => {
 
-    // Select email content div and li content
+    // Select email content div
     const emailContent = document.querySelector('#email-content');
+
+    // Select li elements
     const liSender = document.querySelector('#li-sender');
+    const liRecipients = document.querySelector('#li-recipients');
     const liSubject = document.querySelector('#li-subject');
     const liBody = document.querySelector('#li-body');
     const liTimestamp = document.querySelector('#li-timestamp');
 
     // Add email info to div
-    liSender.innerHTML = `${email['sender']}`;
-    liSubject.innerHTML = `${email['subject']}`;
+    liSender.innerHTML = `From: ${email['sender']}`;
+    liRecipients.innerHTML = `To: ${email['recipients']}`;
+    liSubject.innerHTML = `Re: ${email['subject']}`;
     liBody.innerHTML = `${email['body']}`;
     liTimestamp.innerHTML = `<i>${email['timestamp']}</i>`;
 
@@ -179,14 +177,13 @@ function view_email(event) {
 
     replyButton.setAttribute("data-id", email['id']);
 
-  });
-}
-
-function put_read(emailId) {
-
-  fetch(`/emails/${emailId}`, {
-    method: 'PUT',
-    body: JSON.stringify({read: true})
+    // Update read status
+    if (email['read'] == false); {
+      fetch(`/emails/${email['id']}`, {
+          method: 'PUT',
+          body: JSON.stringify({read: true})
+        })
+    };
   });
 }
 
