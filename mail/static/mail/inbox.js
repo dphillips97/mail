@@ -17,6 +17,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function compose_email(event) {
 
+  // GET call to fill if event (reply button clicked)
+  if (event.target.id='reply-button'){
+
+    const emailId = this.dataset.id;
+
+    // GET request to get email's info
+    fetch(`/emails/${emailId}`)
+    .then(response => response.json())
+    .then(email => {
+
+      recipients.value = `${email['sender']}`;
+      subject.value = `Re: ${email['subject']}`;
+      body.value = `On ${email['timestamp']}, ${email['sender']} wrote:`;
+      body.value += `\n${email['body']}`;
+      });
+  };
+
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
@@ -33,19 +50,7 @@ function compose_email(event) {
   body.value = '';
 
   
-  // GET call to fill if called by event
-  const emailId = this.dataset.id;
-
-  // GET request to get email's info
-  fetch(`/emails/${emailId}`)
-  .then(response => response.json())
-  .then(email => {
-
-    recipients.value = `${email['sender']}`;
-    subject.value = `Re: ${email['subject']}`;
-    body.value = `On ${email['timestamp']}, ${email['sender']} wrote:`;
-    body.value += `\n${email['body']}`;
-    });
+  
 
 }
 
